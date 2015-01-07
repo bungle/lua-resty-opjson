@@ -45,10 +45,10 @@ enum json_typ json_num(json_number *num, const struct json_token *tok);
 ]]
 local arr = { __index = { __jsontype = "array"  }}
 local obj = { __index = { __jsontype = "object" }}
-local lib = ffi_load("libopjson")
+local lib = ffi_load("/Users/bungle/Sources/lua-resty-opjson/lib/resty/libopjson.so")
 local n, b, t, p = ffi_new("json_number[1]"), ffi_new("json_char[256]"), ffi_new("struct json_token"), ffi_new("json_pair")
 local ok, newtab = pcall(require, "table.new")
-if not ok then newtab = function() return {} end  end
+if not ok then newtab = function() return {} end end
 local json = newtab(0, 3)
 function json.obj(i)
     local o = setmetatable({}, obj)
@@ -72,10 +72,10 @@ function json.arr(i)
 end
 function json.decode(v)
     local z = tonumber(lib.json_type(v))
-    if z == 1 then return json.obj(lib.json_begin(v.str, v.len))            end
-    if z == 2 then return json.arr(lib.json_begin(v.str, v.len))            end
-    if z == 3 then return lib.json_num(n, v) and tonumber(n[0]) or nan      end
-    if z == 4 then return sub(ffi_str(b, lib.json_cpy(b, 256, v)), 2, -2)   end
+    if z == 1 then return json.obj(lib.json_begin(v.str, v.len)) end
+    if z == 2 then return json.arr(lib.json_begin(v.str, v.len)) end
+    if z == 3 then return lib.json_num(n, v) and tonumber(n[0]) or nan end
+    if z == 4 then return sub(ffi_str(b, lib.json_cpy(b, 256, v)), 2, -2) end
     if z == 5 then return true  end
     if z == 6 then return false end
     if z == 7 then return null  end
