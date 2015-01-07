@@ -5,6 +5,7 @@ local ffi_cdef     = ffi.cdef
 local ffi_load     = ffi.load
 local ffi_str      = ffi.string
 local sub          = string.sub
+local nan          = math.nan
 local null         = {}
 if ngx and ngx.null then
     null = ngx.null
@@ -73,7 +74,7 @@ function json.decode(v)
     local z = tonumber(lib.json_type(v))
     if z == 1 then return json.obj(lib.json_begin(v.str, v.len))            end
     if z == 2 then return json.arr(lib.json_begin(v.str, v.len))            end
-    if z == 3 then return lib.json_num(n, v) and tonumber(n[0]) or math.nan end
+    if z == 3 then return lib.json_num(n, v) and tonumber(n[0]) or nan      end
     if z == 4 then return sub(ffi_str(b, lib.json_cpy(b, 256, v)), 2, -2)   end
     if z == 5 then return true  end
     if z == 6 then return false end
