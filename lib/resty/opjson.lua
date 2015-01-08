@@ -80,13 +80,13 @@ function json.arr(i, l)
 end
 function json.decode(v)
     local z = tonumber(lib.json_type(v))
-    if z == 0 then return nil end
-    if z == 1 then return json.obj(lib.json_begin(v.str, v.len), tonumber(v.children)) end
-    if z == 2 then return json.arr(lib.json_begin(v.str, v.len), tonumber(v.children)) end
+    if z == 1 then return json.obj(lib.json_begin(v.str, v.len), tonumber(v.children))  end
+    if z == 2 then return json.arr(lib.json_begin(v.str, v.len), tonumber(v.children))  end
     if z == 3 then return lib.json_num(n, v) == C.JSON_NUMBER and tonumber(n[0]) or nan end
     if z == 5 then return true  end
     if z == 6 then return false end
     if z == 7 then return null  end
+    if z == 0 then return nil   end
     lib.json_deq(v)
     return ffi_str(b, lib.json_cpy(b, 256, v))
 end
