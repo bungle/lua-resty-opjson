@@ -28,6 +28,7 @@ typedef struct json_token {
     const json_char *str;
     json_size len;
     json_size sub;
+    json_size children;
 } json_pair[2];
 struct json_iter {
     int depth;
@@ -43,25 +44,32 @@ json_size json_cpy(json_char*, json_size, const struct json_token*);
 enum json_typ json_type(const struct json_token*);
 enum json_typ json_num(json_number *num, const struct json_token *tok);
 ]]
-local arr = { __index = { __jsontype = "array"  }}
-local obj = { __index = { __jsontype = "object" }}
-local lib = ffi_load("/Users/bungle/Sources/lua-resty-opjson/lib/resty/libopjson.so")
+local lib = ffi_load("libopjson")
 local n, b, t, p = ffi_new("json_number[1]"), ffi_new("json_char[256]"), ffi_new("struct json_token"), ffi_new("json_pair")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
+
+local arr_mt = newtab(0, 1)
+arr_mt.__jsontype = "array"
+local obj_mt = newtab(0, 1)
+obj_mt.__jsontype = "object"
+local arr = newtab(0, 1)
+arr.__index = arr_mt
+local obj = newtab(0, 1)
+obj.__index = obj_mt
+
 local json = newtab(0, 3)
-function json.obj(i)
-    local o = setmetatable({}, obj)
+function json.obj(i, l)
     i = lib.json_parse(p, i)
+    local o = setmetatable(newtab(0, l or 0), obj)
     while i.err == 0 do
         o[sub(ffi_str(b, lib.json_cpy(b, 256, p[0])), 2, -2)] = json.decode(p[1])
         i = lib.json_parse(p, i)
     end
     return o
 end
-function json.arr(i)
-    local a = setmetatable({}, arr)
-    local j = 1
+function json.arr(i, l)
+    local a, j = setmetatable(newtab(l, 0), arr), 1
     i = lib.json_read(t, i)
     while i.err == 0 do
         a[j] = json.decode(t)
@@ -72,8 +80,8 @@ function json.arr(i)
 end
 function json.decode(v)
     local z = tonumber(lib.json_type(v))
-    if z == 1 then return json.obj(lib.json_begin(v.str, v.len)) end
-    if z == 2 then return json.arr(lib.json_begin(v.str, v.len)) end
+    if z == 1 then return json.obj(lib.json_begin(v.str, v.len), v.children) end
+    if z == 2 then return json.arr(lib.json_begin(v.str, v.len), v.children) end
     if z == 3 then return lib.json_num(n, v) and tonumber(n[0]) or nan end
     if z == 4 then return sub(ffi_str(b, lib.json_cpy(b, 256, v)), 2, -2) end
     if z == 5 then return true  end
@@ -81,4 +89,4 @@ function json.decode(v)
     if z == 7 then return null  end
     return nil
 end
-return { decode = function(j, l) return setmetatable(json.obj(lib.json_begin(j, l or #j)), obj) end }
+return { decode = function(j, l) return json.obj(lib.json_begin(j, l or #j)) end }
