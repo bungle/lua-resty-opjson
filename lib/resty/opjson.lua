@@ -61,7 +61,8 @@ function json.obj(i, l)
     i = lib.json_parse(p, i)
     local o = setmetatable(newtab(0, l or 0), obj)
     while i.err == 0 do
-        o[sub(ffi_str(b, lib.json_cpy(b, 256, p[0])), 2, -2)] = json.decode(p[1])
+        lib.json_deq(p[0])
+        o[ffi_str(b, lib.json_cpy(b, 256, p[0]))] = json.decode(p[1])
         i = lib.json_parse(p, i)
     end
     return o
