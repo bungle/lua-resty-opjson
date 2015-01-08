@@ -4,7 +4,6 @@ local ffi_new      = ffi.new
 local ffi_cdef     = ffi.cdef
 local ffi_load     = ffi.load
 local ffi_str      = ffi.string
-local sub          = string.sub
 local nan          = math.nan
 local null         = {}
 if ngx and ngx.null then
@@ -43,12 +42,12 @@ struct json_iter json_parse(json_pair, const struct json_iter*);
 json_size json_cpy(json_char*, json_size, const struct json_token*);
 enum json_typ json_type(const struct json_token*);
 enum json_typ json_num(json_number *num, const struct json_token *tok);
+void json_deq(struct json_token*);
 ]]
 local lib = ffi_load("libopjson")
 local n, b, t, p = ffi_new("json_number[1]"), ffi_new("json_char[256]"), ffi_new("struct json_token"), ffi_new("json_pair")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
-
 local arr_mt = newtab(0, 1)
 arr_mt.__jsontype = "array"
 local obj_mt = newtab(0, 1)
@@ -57,7 +56,6 @@ local arr = newtab(0, 1)
 arr.__index = arr_mt
 local obj = newtab(0, 1)
 obj.__index = obj_mt
-
 local json = newtab(0, 3)
 function json.obj(i, l)
     i = lib.json_parse(p, i)
@@ -80,10 +78,13 @@ function json.arr(i, l)
 end
 function json.decode(v)
     local z = tonumber(lib.json_type(v))
-    if z == 1 then return json.obj(lib.json_begin(v.str, v.len), v.children) end
-    if z == 2 then return json.arr(lib.json_begin(v.str, v.len), v.children) end
+    if z == 1 then return json.obj(lib.json_begin(v.str, v.len), tonumber(v.children)) end
+    if z == 2 then return json.arr(lib.json_begin(v.str, v.len), tonumber(v.children)) end
     if z == 3 then return lib.json_num(n, v) and tonumber(n[0]) or nan end
-    if z == 4 then return sub(ffi_str(b, lib.json_cpy(b, 256, v)), 2, -2) end
+    if z == 4 then
+        lib.json_deq(v)
+        return ffi_str(b, lib.json_cpy(b, 256, v))
+    end
     if z == 5 then return true  end
     if z == 6 then return false end
     if z == 7 then return null  end
