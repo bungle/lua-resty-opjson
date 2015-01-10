@@ -4,8 +4,6 @@ local ffi_new      = ffi.new
 local ffi_cdef     = ffi.cdef
 local ffi_load     = ffi.load
 local ffi_str      = ffi.string
-local C            = ffi.C
-local nan          = math.nan
 local null         = {}
 if ngx and ngx.null then
     null = ngx.null
@@ -46,57 +44,52 @@ enum json_typ json_num(json_number *num, const struct json_token *tok);
 void json_deq(struct json_token*);
 ]]
 local lib = ffi_load("libopjson")
-local n, b, t, p = ffi_new("json_number[1]"), ffi_new("json_char[256]"), ffi_new("struct json_token"), ffi_new("json_pair")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
-local arr_mt = newtab(0, 1)
-arr_mt.__jsontype = "array"
-local obj_mt = newtab(0, 1)
-obj_mt.__jsontype = "object"
-local arr = newtab(0, 1)
-arr.__index = arr_mt
-local obj = newtab(0, 1)
-obj.__index = obj_mt
-local json = newtab(0, 3)
-function json.obj(i, l)
+local arr = { __index = { __jsontype = "array"  }}
+local obj = { __index = { __jsontype = "object" } }
+local num = ffi_new("json_number[1]")
+local buf = ffi_new("json_char[256]")
+local t,p = ffi_new("struct json_token"), ffi_new("json_pair")
+local val = newtab(8, 0)
+val[0] = function() return nil end
+val[1] = function(v)
+    local i, l = lib.json_begin(v.str, v.len), tonumber(v.children)
     local o = setmetatable(newtab(0, l), obj)
-    for j=1, l do
+    for n = 1, l do
         i = lib.json_parse(p, i)
-        lib.json_deq(p[0])
-        o[ffi_str(b, lib.json_cpy(b, 256, p[0]))] = json.decode(p[1])
+        o[val[4](p[0])] = val[tonumber(lib.json_type(p[1]))](p[1])
     end
     return o
 end
-function json.arr(i, l)
+val[2] = function(v)
+    local i, l = lib.json_begin(v.str, v.len), tonumber(v.children)
     local a = setmetatable(newtab(l, 0), arr)
-    for j=1, l do
+    for n = 1, l do
         i = lib.json_read(t, i)
-        a[j] = json.decode(t)
+        a[n] = val[tonumber(lib.json_type(t))](t)
     end
     return a
 end
-function json.decode(v)
-    local z = tonumber(lib.json_type(v))
-    if z == 1 then return json.obj(lib.json_begin(v.str, v.len), tonumber(v.children))  end
-    if z == 2 then return json.arr(lib.json_begin(v.str, v.len), tonumber(v.children))  end
-    if z == 3 then
-        lib.json_num(n, v)
-        return  tonumber(n[0])
-    end
-    if z == 5 then return true  end
-    if z == 6 then return false end
-    if z == 7 then return null  end
-    if z == 0 then return nil   end
-    lib.json_deq(v)
-    return ffi_str(b, lib.json_cpy(b, 256, v))
+val[3] = function(v)
+    lib.json_num(num, v)
+    return tonumber(num[0])
 end
-return { decode = function(j, l)
-    local i = lib.json_parse(p, lib.json_begin(j, l or #j))
-    local o = setmetatable({}, obj)
-    while i.err == 0 do
-        lib.json_deq(p[0])
-        o[ffi_str(b, lib.json_cpy(b, 256, p[0]))] = json.decode(p[1])
+val[4] = function(v)
+    lib.json_deq(v)
+    return ffi_str(buf, lib.json_cpy(buf, 256, v))
+end
+val[5] = function() return true  end
+val[6] = function() return false end
+val[7] = function() return null  end
+return function(j, l)
+    local i = lib.json_begin(j, l or #j)
+    if i.src == nil then return nil end
+    i = lib.json_parse(p, i)
+    local o = {}
+    while i.src ~= nil do
+        o[val[4](p[0])] = val[tonumber(lib.json_type(p[1]))](p[1])
         i = lib.json_parse(p, i)
     end
     return o
-end }
+end
