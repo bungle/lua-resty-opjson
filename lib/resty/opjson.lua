@@ -47,7 +47,7 @@ local lib = ffi_load("libopjson")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
 local arr = { __index = { __jsontype = "array"  }}
-local obj = { __index = { __jsontype = "object" } }
+local obj = { __index = { __jsontype = "object" }}
 local num = ffi_new("json_number[1]")
 local buf = ffi_new("json_char[256]")
 local t,p = ffi_new("struct json_token"), ffi_new("json_pair")
@@ -71,23 +71,15 @@ val[2] = function(v)
     end
     return a
 end
-val[3] = function(v)
-    lib.json_num(num, v)
-    return tonumber(num[0])
-end
-val[4] = function(v)
-    lib.json_deq(v)
-    return ffi_str(buf, lib.json_cpy(buf, 256, v))
-end
+val[3] = function(v) lib.json_num(num, v); return tonumber(num[0]) end
+val[4] = function(v) lib.json_deq(v); return ffi_str(buf, lib.json_cpy(buf, 256, v)) end
 val[5] = function() return true  end
 val[6] = function() return false end
 val[7] = function() return null  end
 return function(j, l)
-    local i = lib.json_begin(j, l or #j)
-    if i.src == nil then return nil end
-    i = lib.json_parse(p, i)
+    local i = lib.json_parse(p, lib.json_begin(j, l or #j))
     local o = {}
-    while i.src ~= nil do
+    while i.err == 0 do
         o[val[4](p[0])] = val[tonumber(lib.json_type(p[1]))](p[1])
         i = lib.json_parse(p, i)
     end
