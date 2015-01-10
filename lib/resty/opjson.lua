@@ -45,7 +45,7 @@ enum json_typ json_type(const struct json_token*);
 enum json_typ json_num(json_number *num, const struct json_token *tok);
 void json_deq(struct json_token*);
 ]]
-local lib = ffi_load("libopjson")
+local lib = ffi_load("/Users/bungle/Sources/lua-resty-opjson/lib/resty/libopjson.so")
 local n, b, t, p = ffi_new("json_number[1]"), ffi_new("json_char[256]"), ffi_new("struct json_token"), ffi_new("json_pair")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
@@ -59,22 +59,19 @@ local obj = newtab(0, 1)
 obj.__index = obj_mt
 local json = newtab(0, 3)
 function json.obj(i, l)
-    i = lib.json_parse(p, i)
-    local o = setmetatable(newtab(0, l or 0), obj)
-    while i.err == 0 do
+    local o = setmetatable(newtab(0, l), obj)
+    for j=1, l do
+        i = lib.json_parse(p, i)
         lib.json_deq(p[0])
         o[ffi_str(b, lib.json_cpy(b, 256, p[0]))] = json.decode(p[1])
-        i = lib.json_parse(p, i)
     end
     return o
 end
 function json.arr(i, l)
-    local a, j = setmetatable(newtab(l, 0), arr), 1
-    i = lib.json_read(t, i)
-    while i.err == 0 do
-        a[j] = json.decode(t)
+    local a = setmetatable(newtab(l, 0), arr)
+    for j=1, l do
         i = lib.json_read(t, i)
-        j = j + 1
+        a[j] = json.decode(t)
     end
     return a
 end
@@ -90,4 +87,13 @@ function json.decode(v)
     lib.json_deq(v)
     return ffi_str(b, lib.json_cpy(b, 256, v))
 end
-return { decode = function(j, l) return json.obj(lib.json_begin(j, l or #j)) end }
+return { decode = function(j, l)
+    local i = lib.json_parse(p, lib.json_begin(j, l or #j))
+    local o = setmetatable({}, obj)
+    while i.err == 0 do
+        lib.json_deq(p[0])
+        o[ffi_str(b, lib.json_cpy(b, 256, p[0]))] = json.decode(p[1])
+        i = lib.json_parse(p, i)
+    end
+    return o
+end }
