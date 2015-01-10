@@ -45,7 +45,7 @@ enum json_typ json_type(const struct json_token*);
 enum json_typ json_num(json_number *num, const struct json_token *tok);
 void json_deq(struct json_token*);
 ]]
-local lib = ffi_load("/Users/bungle/Sources/lua-resty-opjson/lib/resty/libopjson.so")
+local lib = ffi_load("libopjson")
 local n, b, t, p = ffi_new("json_number[1]"), ffi_new("json_char[256]"), ffi_new("struct json_token"), ffi_new("json_pair")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
@@ -79,7 +79,10 @@ function json.decode(v)
     local z = tonumber(lib.json_type(v))
     if z == 1 then return json.obj(lib.json_begin(v.str, v.len), tonumber(v.children))  end
     if z == 2 then return json.arr(lib.json_begin(v.str, v.len), tonumber(v.children))  end
-    if z == 3 then return lib.json_num(n, v) == C.JSON_NUMBER and tonumber(n[0]) or nan end
+    if z == 3 then
+        lib.json_num(n, v)
+        return  tonumber(n[0])
+    end
     if z == 5 then return true  end
     if z == 6 then return false end
     if z == 7 then return null  end
