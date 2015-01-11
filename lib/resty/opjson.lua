@@ -27,7 +27,7 @@ void json_read(struct json_token*, struct json_iter*);
 void json_type(int *, const struct json_token*);
 void json_num(double *, const struct json_token*);
 ]]
-local lib = ffi_load("/Users/bungle/Sources/lua-resty-opjson/lib/resty/libopjson.so")
+local lib = ffi_load("libopjson")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
 local arr  = { __index = { __jsontype = "array"  }}
