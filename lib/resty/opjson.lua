@@ -25,14 +25,16 @@ struct json_iter {
 void json_read(struct json_token*, struct json_iter*);
 void json_num(double *, const struct json_token*);
 ]]
-local lib = ffi_load("libopjson")
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
-local arr  = { __index = { __jsontype = "array"  }}
-local obj  = { __index = { __jsontype = "object" }}
+local lib = ffi_load("libopjson")
+local arr = { __index = { __jsontype = "array"  }}
+local obj = { __index = { __jsontype = "object" }}
 local itr = ffi_typeof("struct json_iter")
-local k,v,n = ffi_new("struct json_token"), ffi_new("struct json_token"), ffi_new("double[1]")
-local function val(p)
+local key = ffi_new("struct json_token")
+local val = ffi_new("struct json_token")
+local num = ffi_new("double[1]")
+local function value(p)
     if p.str[0] == 123 then
         local i = ffi_new(itr)
         local l = tonumber(p.children)
@@ -40,9 +42,9 @@ local function val(p)
         i.src = p.str
         i.len = p.len
         for j = 1, l do
-            lib.json_read(k, i)
-            lib.json_read(v, i)
-            o[ffi_str(k.str + 1, k.len - 2)] = val(v)
+            lib.json_read(key, i)
+            lib.json_read(val, i)
+            o[ffi_str(key.str + 1, key.len - 2)] = value(val)
         end
         return o
     end
@@ -53,8 +55,8 @@ local function val(p)
         i.src = p.str
         i.len = p.len
         for j = 1, l do
-            lib.json_read(v, i)
-            a[j] = val(v)
+            lib.json_read(val, i)
+            a[j] = value(val)
         end
         return a
     end
@@ -62,20 +64,20 @@ local function val(p)
     if p.str[0] == 116 then return true  end
     if p.str[0] == 102 then return false end
     if p.str[0] == 110 then return null  end
-    lib.json_num(n, p)
-    return n[0]
+    lib.json_num(num, p)
+    return num[0]
 end
 return function(j, l)
     local i = ffi_new(itr)
     i.src = j
     i.len = l or #j
-    lib.json_read(k, i)
-    lib.json_read(v, i)
+    lib.json_read(key, i)
+    lib.json_read(val, i)
     local o = {}
     while i.err == 0 do
-        o[ffi_str(k.str + 1, k.len - 2)] = val(v)
-        lib.json_read(k, i)
-        lib.json_read(v, i)
+        o[ffi_str(key.str + 1, key.len - 2)] = value(val)
+        lib.json_read(key, i)
+        lib.json_read(val, i)
     end
     return o
 end
