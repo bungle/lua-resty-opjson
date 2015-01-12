@@ -3,7 +3,7 @@ LuaJIT FFI-based [@bungle/libopjson](https://github.com/bungle/libopjson) (one-p
 
 ## Usage
 
-```
+```lua
 local decode = require "resty.opjson"
 local json = [[
 {
