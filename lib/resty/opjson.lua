@@ -1,14 +1,14 @@
 local setmetatable = setmetatable
+local require      = require
 local ffi          = require "ffi"
 local ffi_new      = ffi.new
 local ffi_cdef     = ffi.cdef
 local ffi_load     = ffi.load
 local ffi_typeof   = ffi.typeof
 local ffi_str      = ffi.string
-local null         = {}
-if ngx and ngx.null then
-    null = ngx.null
-end
+local tonumber     = tonumber
+local pcall        = pcall
+local null         = ngx and ngx.null or {}
 ffi_cdef[[
 struct json_token {
     const unsigned char *str;
