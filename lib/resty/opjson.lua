@@ -38,7 +38,7 @@ local function value(p)
     if p.str[0] == 123 then
         local i = ffi_new(itr)
         local l = tonumber(p.children)
-        local o = setmetatable(newtab(0, l), obj)
+        local o = newtab(0, l)
         i.src = p.str
         i.len = p.len
         for j = 1, l do
@@ -46,19 +46,19 @@ local function value(p)
             lib.json_read(val, i)
             o[ffi_str(key.str + 1, key.len - 2)] = value(val)
         end
-        return o
+        return setmetatable(o, obj)
     end
     if p.str[0] == 91 then
         local i = ffi_new(itr)
         local l = tonumber(p.children)
-        local a = setmetatable(newtab(l, 0), arr)
+        local a = newtab(l, 0)
         i.src = p.str
         i.len = p.len
         for j = 1, l do
             lib.json_read(val, i)
             a[j] = value(val)
         end
-        return a
+        return setmetatable(a, arr)
     end
     if p.str[0] == 34  then return ffi_str(p.str + 1, p.len - 2) end
     if p.str[0] == 116 then return true  end
@@ -79,5 +79,5 @@ return function(j, l)
         lib.json_read(key, i)
         lib.json_read(val, i)
     end
-    return o
+    return setmetatable(o, obj)
 end
