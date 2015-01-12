@@ -22,9 +22,7 @@ struct json_iter {
     const unsigned char *src;
     unsigned long len;
 };
-void json_begin(const unsigned char*, unsigned long, struct json_iter*);
 void json_read(struct json_token*, struct json_iter*);
-void json_type(int *, const struct json_token*);
 void json_num(double *, const struct json_token*);
 ]]
 local lib = ffi_load("libopjson")
@@ -39,7 +37,8 @@ local function val(p)
         local i = ffi_new(itr)
         local l = tonumber(p.children)
         local o = setmetatable(newtab(0, l), obj)
-        i.src, i.len = p.str, p.len
+        i.src = p.str
+        i.len = p.len
         for j = 1, l do
             lib.json_read(k, i)
             lib.json_read(v, i)
@@ -73,7 +72,7 @@ return function(j, l)
     lib.json_read(k, i)
     lib.json_read(v, i)
     local o = {}
-    while i.src ~= nil do
+    while i.err == 0 do
         o[ffi_str(k.str + 1, k.len - 2)] = val(v)
         lib.json_read(k, i)
         lib.json_read(v, i)
