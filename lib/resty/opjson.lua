@@ -34,13 +34,13 @@ local itr = ffi_typeof("struct json_iter")
 local key = ffi_new("struct json_token")
 local val = ffi_new("struct json_token")
 local num = ffi_new("double[1]")
-local function value(p)
-    if p.str[0] == 123 then
+local function value(v)
+    if v.str[0] == 123 then
         local i = ffi_new(itr)
-        local l = tonumber(p.children)
+        local l = tonumber(v.children)
         local o = newtab(0, l)
-        i.src = p.str
-        i.len = p.len
+        i.src = v.str
+        i.len = v.len
         for j = 1, l do
             lib.json_read(key, i)
             lib.json_read(val, i)
@@ -48,23 +48,23 @@ local function value(p)
         end
         return setmetatable(o, obj)
     end
-    if p.str[0] == 91 then
+    if v.str[0] == 91 then
         local i = ffi_new(itr)
-        local l = tonumber(p.children)
+        local l = tonumber(v.children)
         local a = newtab(l, 0)
-        i.src = p.str
-        i.len = p.len
+        i.src = v.str
+        i.len = v.len
         for j = 1, l do
             lib.json_read(val, i)
             a[j] = value(val)
         end
         return setmetatable(a, arr)
     end
-    if p.str[0] == 34  then return ffi_str(p.str + 1, p.len - 2) end
-    if p.str[0] == 116 then return true  end
-    if p.str[0] == 102 then return false end
-    if p.str[0] == 110 then return null  end
-    lib.json_num(num, p)
+    if v.str[0] == 34  then return ffi_str(v.str + 1, v.len - 2) end
+    if v.str[0] == 116 then return true  end
+    if v.str[0] == 102 then return false end
+    if v.str[0] == 110 then return null  end
+    lib.json_num(num, v)
     return num[0]
 end
 return function(j, l)
