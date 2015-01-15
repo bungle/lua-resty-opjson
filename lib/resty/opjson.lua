@@ -23,7 +23,7 @@ struct json_iter {
     unsigned long len;
 };
 void json_read(struct json_token*, struct json_iter*);
-void json_num(double *, const struct json_token*);
+int  json_num(double *, const struct json_token*);
 ]]
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
