@@ -17,13 +17,12 @@ struct json_token {
 };
 struct json_iter {
     int depth;
-    int err;
     const void **go;
     const unsigned char *src;
     unsigned long len;
 };
-void json_read(struct json_token*, struct json_iter*);
-int  json_num(double *, const struct json_token*);
+int json_read(struct json_token*, struct json_iter*);
+int json_num(double *, const struct json_token*);
 ]]
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
@@ -74,7 +73,7 @@ return function(j, l)
     lib.json_read(key, i)
     lib.json_read(val, i)
     local o = {}
-    while i.err == 0 do
+    while i.src ~= nil do
         o[ffi_str(key.str + 1, key.len - 2)] = value(val)
         lib.json_read(key, i)
         lib.json_read(val, i)
