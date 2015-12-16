@@ -26,13 +26,13 @@ int json_num(double *, const struct json_token*);
 ]]
 local ok, newtab = pcall(require, "table.new")
 if not ok then newtab = function() return {} end end
-local lib = ffi_load("libopjson")
+local lib = ffi_load "opjson"
 local arr = { __index = { __jsontype = "array"  }}
 local obj = { __index = { __jsontype = "object" }}
-local itr = ffi_typeof("struct json_iter")
-local key = ffi_new("struct json_token")
-local val = ffi_new("struct json_token")
-local num = ffi_new("double[1]")
+local itr = ffi_typeof "struct json_iter"
+local key = ffi_new "struct json_token"
+local val = ffi_new "struct json_token"
+local num = ffi_new "double[1]"
 local function value(v)
     if v.str[0] == 123 then
         local i = ffi_new(itr)
@@ -40,7 +40,7 @@ local function value(v)
         local o = newtab(0, l)
         i.src = v.str
         i.len = v.len
-        for j = 1, l do
+        for _ = 1, l do
             lib.json_read(key, i)
             lib.json_read(val, i)
             o[ffi_str(key.str + 1, key.len - 2)] = value(val)
